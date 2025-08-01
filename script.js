@@ -3,8 +3,9 @@ class CarReservationSystem {
     constructor() {
         this.vehicles = this.loadVehicles();
         this.reservations = this.loadReservations();
-        this.currentWeekStart = this.getWeekStart(new Date());
+        this.currentDate = new Date();
         this.selectedVehicle = null;
+        this.selectedDate = null;
     }
 
     // 車両管理
@@ -58,12 +59,71 @@ class CarReservationSystem {
         this.saveReservations();
     }
 
-    getReservationsForVehicle(vehicleId, startDate, endDate) {
-        return this.reservations.filter(r => {
-            if (r.vehicleId !== vehicleId) return false;
-            const resDate = new Date(r.date);
-            return resDate >= startDate && resDate <= endDate;
+    // 日付の予約状況を取得
+    getDayStatus(vehicleId, date) {
+        const dateStr = this.formatDate(date);
+        const dayReservations = this.reservations.filter(r => 
+            r.vehicleId === vehicleId && r.date === dateStr
+        );
+
+        if (dayReservations.length === 0) {
+            return 'available'; // ○：空き
+        }
+
+        // 営業時間（8:00-20:00）の総時間数を計算
+        const totalMinutes = 12 * 60; // 12時間
+        let reservedMinutes = 0;
+
+        dayReservations.forEach(reservation => {
+            const start = Math.max(this.timeToMinutes(reservation.startTime), 8 * 60);
+            const end = Math.min(this.timeToMinutes(reservation.endTime), 20 * 60);
+            if (end > start) {
+                reservedMinutes += end - start;
+            }
         });
+
+        const occupancyRate = reservedMinutes / totalMinutes;
+
+        if (occupancyRate >= 0.8) {
+            return 'full'; // ×：満員（80%以上予約）
+        } else if (occupancyRate > 0) {
+            return 'partial'; // △：一部予約
+        } else {
+            return 'available'; // ○：空き
+        }
+    }
+
+    // 特定の日の時間別予約状況を取得
+    getDaySchedule(vehicleId, date) {
+        const dateStr = this.formatDate(date);
+        const schedule = [];
+
+        for (let hour = 8; hour < 20; hour++) {
+            const timeSlot = {
+                hour: hour,
+                time: `${hour}:00`,
+                available: true,
+                reservations: []
+            };
+
+            const slotReservations = this.reservations.filter(r => {
+                if (r.vehicleId !== vehicleId || r.date !== dateStr) return false;
+                const startHour = parseInt(r.startTime.split(':')[0]);
+                const endHour = parseInt(r.endTime.split(':')[0]);
+                const endMinute = parseInt(r.endTime.split(':')[1]);
+                const actualEndHour = endMinute > 0 ? endHour + 1 : endHour;
+                return hour >= startHour && hour < actualEndHour;
+            });
+
+            if (slotReservations.length > 0) {
+                timeSlot.available = false;
+                timeSlot.reservations = slotReservations;
+            }
+
+            schedule.push(timeSlot);
+        }
+
+        return schedule;
     }
 
     checkAvailability(vehicleId, date, startTime, endTime) {
@@ -83,13 +143,6 @@ class CarReservationSystem {
     }
 
     // ユーティリティ関数
-    getWeekStart(date) {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        return new Date(d.setDate(diff));
-    }
-
     formatDate(date) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -100,6 +153,34 @@ class CarReservationSystem {
     timeToMinutes(time) {
         const [hours, minutes] = time.split(':').map(Number);
         return hours * 60 + minutes;
+    }
+
+    getMonthDays(date) {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const days = [];
+
+        // 月初の曜日に合わせて前月の日付を追加
+        const firstDayOfWeek = firstDay.getDay();
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+            const d = new Date(year, month, -i);
+            days.push({ date: d, otherMonth: true });
+        }
+
+        // 当月の日付
+        for (let i = 1; i <= lastDay.getDate(); i++) {
+            days.push({ date: new Date(year, month, i), otherMonth: false });
+        }
+
+        // 週末まで次月の日付を追加
+        const remainingDays = 42 - days.length; // 6週間分
+        for (let i = 1; i <= remainingDays; i++) {
+            days.push({ date: new Date(year, month + 1, i), otherMonth: true });
+        }
+
+        return days;
     }
 }
 
@@ -115,10 +196,13 @@ class UIController {
     initializeElements() {
         this.vehicleSelect = document.getElementById('vehicleSelect');
         this.addVehicleBtn = document.getElementById('addVehicleBtn');
-        this.calendar = document.getElementById('calendar');
-        this.currentWeek = document.getElementById('currentWeek');
-        this.prevWeekBtn = document.getElementById('prevWeek');
-        this.nextWeekBtn = document.getElementById('nextWeek');
+        this.monthCalendar = document.getElementById('monthCalendar');
+        this.currentMonth = document.getElementById('currentMonth');
+        this.prevMonthBtn = document.getElementById('prevMonth');
+        this.nextMonthBtn = document.getElementById('nextMonth');
+        this.dailySchedule = document.getElementById('dailySchedule');
+        this.selectedDateEl = document.getElementById('selectedDate');
+        this.dailyTimeSlots = document.getElementById('dailyTimeSlots');
         this.reservationForm = document.getElementById('reservationForm');
         this.reservationList = document.getElementById('reservationList');
         this.modal = document.getElementById('modal');
@@ -137,8 +221,8 @@ class UIController {
     bindEvents() {
         this.vehicleSelect.addEventListener('change', () => this.onVehicleChange());
         this.addVehicleBtn.addEventListener('click', () => this.showAddVehicleModal());
-        this.prevWeekBtn.addEventListener('click', () => this.changeWeek(-1));
-        this.nextWeekBtn.addEventListener('click', () => this.changeWeek(1));
+        this.prevMonthBtn.addEventListener('click', () => this.changeMonth(-1));
+        this.nextMonthBtn.addEventListener('click', () => this.changeMonth(1));
         this.reservationForm.addEventListener('submit', (e) => this.handleReservation(e));
         this.closeModal.addEventListener('click', () => this.hideModal());
         this.modal.addEventListener('click', (e) => {
@@ -151,9 +235,8 @@ class UIController {
 
     updateUI() {
         this.updateVehicleSelect();
-        this.updateCalendar();
+        this.updateMonthCalendar();
         this.updateReservationList();
-        this.updateWeekDisplay();
     }
 
     updateVehicleSelect() {
@@ -166,80 +249,146 @@ class UIController {
         });
     }
 
-    updateCalendar() {
+    updateMonthCalendar() {
+        const year = this.system.currentDate.getFullYear();
+        const month = this.system.currentDate.getMonth();
+        
+        // 月表示を更新
+        this.currentMonth.textContent = `${year}年${month + 1}月`;
+
         if (!this.system.selectedVehicle) {
-            this.calendar.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #718096;">車両を選択してください</p>';
+            this.monthCalendar.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #718096;">車両を選択してください</p>';
             return;
         }
 
-        this.calendar.innerHTML = '';
-        
-        // ヘッダー行
-        const headers = ['時間', '月', '火', '水', '木', '金', '土', '日'];
-        headers.forEach(header => {
-            const div = document.createElement('div');
-            div.className = 'calendar-header';
-            div.textContent = header;
-            this.calendar.appendChild(div);
+        this.monthCalendar.innerHTML = '';
+
+        // 曜日ヘッダー
+        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        weekdays.forEach(day => {
+            const header = document.createElement('div');
+            header.className = 'calendar-weekday';
+            header.textContent = day;
+            this.monthCalendar.appendChild(header);
         });
-        
-        // 時間帯ごとの行
-        for (let hour = 8; hour < 20; hour++) {
-            // 時間ラベル
-            const timeDiv = document.createElement('div');
-            timeDiv.className = 'calendar-cell';
-            timeDiv.textContent = `${hour}:00`;
-            timeDiv.style.background = '#4a5568';
-            timeDiv.style.color = 'white';
-            this.calendar.appendChild(timeDiv);
-            
-            // 各曜日のセル
-            for (let day = 0; day < 7; day++) {
-                const cellDate = new Date(this.system.currentWeekStart);
-                cellDate.setDate(cellDate.getDate() + day);
-                
-                const cell = document.createElement('div');
-                cell.className = 'calendar-cell';
-                cell.dataset.date = this.system.formatDate(cellDate);
-                cell.dataset.hour = hour;
-                
-                // その時間帯の予約を表示
-                const dayReservations = this.system.reservations.filter(r => {
-                    if (r.vehicleId !== parseInt(this.system.selectedVehicle)) return false;
-                    if (r.date !== this.system.formatDate(cellDate)) return false;
-                    
-                    const startHour = parseInt(r.startTime.split(':')[0]);
-                    const endHour = parseInt(r.endTime.split(':')[0]);
-                    return hour >= startHour && hour < endHour;
-                });
-                
-                dayReservations.forEach(res => {
-                    const resBlock = document.createElement('div');
-                    resBlock.className = 'reservation-block';
-                    resBlock.textContent = res.userName;
-                    resBlock.onclick = () => this.showReservationDetails(res);
-                    cell.appendChild(resBlock);
-                });
-                
-                if (dayReservations.length > 0) {
-                    cell.classList.add('has-reservation');
-                }
-                
-                this.calendar.appendChild(cell);
+
+        // 日付セル
+        const days = this.system.getMonthDays(this.system.currentDate);
+        days.forEach(dayInfo => {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day';
+            if (dayInfo.otherMonth) {
+                dayDiv.classList.add('other-month');
             }
-        }
+
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = dayInfo.date.getDate();
+
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'day-status';
+
+            // 予約状況を取得して表示
+            const status = this.system.getDayStatus(parseInt(this.system.selectedVehicle), dayInfo.date);
+            switch (status) {
+                case 'available':
+                    statusDiv.textContent = '○';
+                    statusDiv.style.color = '#48bb78';
+                    break;
+                case 'partial':
+                    statusDiv.textContent = '△';
+                    statusDiv.style.color = '#ed8936';
+                    break;
+                case 'full':
+                    statusDiv.textContent = '×';
+                    statusDiv.style.color = '#f56565';
+                    break;
+            }
+
+            dayDiv.appendChild(dayNumber);
+            dayDiv.appendChild(statusDiv);
+
+            // クリックイベント
+            dayDiv.addEventListener('click', () => {
+                if (!dayInfo.otherMonth) {
+                    this.showDaySchedule(dayInfo.date);
+                }
+            });
+
+            this.monthCalendar.appendChild(dayDiv);
+        });
     }
 
-    updateWeekDisplay() {
-        const start = new Date(this.system.currentWeekStart);
-        const end = new Date(start);
-        end.setDate(end.getDate() + 6);
+    showDaySchedule(date) {
+        this.system.selectedDate = date;
         
-        const formatDate = (date) => {
-            return `${date.getMonth() + 1}/${date.getDate()}`;
-        };
-        
-        this.currentWeek.textContent = `${start.getFullYear()}年 ${formatDate(start)} - ${formatDate(end)}`;
+        // 選択された日付を表示
+        const dateStr = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+        const weekday = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
+        this.selectedDateEl.textContent = `${dateStr}（${weekday}）`;
+
+        // 時間別スケジュールを表示
+        const schedule = this.system.getDaySchedule(parseInt(this.system.selectedVehicle), date);
+        this.dailyTimeSlots.innerHTML = '';
+
+        schedule.forEach(slot => {
+            const slotDiv = document.createElement('div');
+            slotDiv.className = `time-slot ${slot.available ? 'available' : 'reserved'}`;
+
+            const timeLabel = document.createElement('div');
+            timeLabel.className = 'time-label';
+            timeLabel.textContent = `${slot.time} - ${slot.hour + 1}:00`;
+
+            const statusDiv = document.createElement('div');
+            if (slot.available) {
+                statusDiv.className = 'slot-status';
+                statusDiv.textContent = '空き';
+            } else {
+                statusDiv.className = 'slot-status reserved';
+                const reservationInfo = document.createElement('div');
+                reservationInfo.className = 'reservation-info';
+                slot.reservations.forEach(res => {
+                    const info = document.createElement('div');
+                    info.innerHTML = `
+                        <strong>${res.userName}</strong> (${res.department})<br>
+                        ${res.startTime} - ${res.endTime}<br>
+                        目的: ${res.purpose || '未記入'}
+                    `;
+                    reservationInfo.appendChild(info);
+                });
+                statusDiv.appendChild(reservationInfo);
+            }
+
+            slotDiv.appendChild(timeLabel);
+            slotDiv.appendChild(statusDiv);
+            this.dailyTimeSlots.appendChild(slotDiv);
+        });
+
+        // 日別詳細セクションを表示
+        this.dailySchedule.style.display = 'block';
+
+        // カレンダーの選択状態を更新
+        document.querySelectorAll('.calendar-day').forEach(day => {
+            day.classList.remove('selected');
+        });
+        event.target.closest('.calendar-day').classList.add('selected');
+
+        // 予約フォームの日付を更新
+        this.reservationDate.value = this.system.formatDate(date);
+    }
+
+    changeMonth(direction) {
+        const newDate = new Date(this.system.currentDate);
+        newDate.setMonth(newDate.getMonth() + direction);
+        this.system.currentDate = newDate;
+        this.updateMonthCalendar();
+    }
+
+    onVehicleChange() {
+        this.system.selectedVehicle = this.vehicleSelect.value;
+        this.updateMonthCalendar();
+        this.updateReservationList();
+        this.dailySchedule.style.display = 'none';
     }
 
     updateReservationList() {
@@ -283,19 +432,6 @@ class UIController {
             item.appendChild(deleteBtn);
             this.reservationList.appendChild(item);
         });
-    }
-
-    onVehicleChange() {
-        this.system.selectedVehicle = this.vehicleSelect.value;
-        this.updateCalendar();
-        this.updateReservationList();
-    }
-
-    changeWeek(direction) {
-        const newDate = new Date(this.system.currentWeekStart);
-        newDate.setDate(newDate.getDate() + (direction * 7));
-        this.system.currentWeekStart = newDate;
-        this.updateUI();
     }
 
     handleReservation(e) {
@@ -375,20 +511,6 @@ class UIController {
             this.hideModal();
         });
         
-        this.showModal();
-    }
-
-    showReservationDetails(reservation) {
-        const vehicle = this.system.vehicles.find(v => v.id === reservation.vehicleId);
-        this.modalBody.innerHTML = `
-            <h3>予約詳細</h3>
-            <p><strong>車両:</strong> ${vehicle.name}</p>
-            <p><strong>利用者:</strong> ${reservation.userName}</p>
-            <p><strong>部署:</strong> ${reservation.department}</p>
-            <p><strong>日付:</strong> ${reservation.date}</p>
-            <p><strong>時間:</strong> ${reservation.startTime} - ${reservation.endTime}</p>
-            <p><strong>目的:</strong> ${reservation.purpose || '未記入'}</p>
-        `;
         this.showModal();
     }
 
