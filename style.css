@@ -1,0 +1,321 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+section {
+    background: white;
+    padding: 25px;
+    margin-bottom: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+h2 {
+    color: #4a5568;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+/* 車両選択 */
+.vehicle-selector {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+#vehicleSelect {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #e2e8f0;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* ボタン */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #48bb78;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #38a169;
+}
+
+.btn-nav {
+    background: #718096;
+    color: white;
+    padding: 8px 16px;
+}
+
+.btn-nav:hover {
+    background: #4a5568;
+}
+
+.btn-danger {
+    background: #f56565;
+    color: white;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+.btn-danger:hover {
+    background: #e53e3e;
+}
+
+/* カレンダー */
+.date-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.current-week {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #4a5568;
+}
+
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.calendar-header, .calendar-cell {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    background: #f7fafc;
+}
+
+.calendar-header {
+    background: #4a5568;
+    color: white;
+    font-weight: bold;
+}
+
+.calendar-cell {
+    min-height: 80px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.calendar-cell:hover {
+    background: #edf2f7;
+    transform: scale(1.02);
+}
+
+.calendar-cell.has-reservation {
+    background: #fef3c7;
+}
+
+.reservation-block {
+    background: #667eea;
+    color: white;
+    padding: 2px 5px;
+    margin: 2px 0;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.reservation-block:hover {
+    background: #5a67d8;
+}
+
+/* フォーム */
+.reservation-form form {
+    display: grid;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+label {
+    margin-bottom: 5px;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="time"],
+select {
+    padding: 10px;
+    border: 2px solid #e2e8f0;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* 予約一覧 */
+.reservation-item {
+    background: #f7fafc;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border-left: 4px solid #667eea;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reservation-info {
+    flex: 1;
+}
+
+.reservation-info h3 {
+    color: #2d3748;
+    margin-bottom: 5px;
+}
+
+.reservation-info p {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* モーダル */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    font-size: 30px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close:hover {
+    color: #000;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .calendar {
+        grid-template-columns: repeat(1, 1fr);
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .vehicle-selector {
+        flex-direction: column;
+    }
+    
+    #vehicleSelect {
+        width: 100%;
+    }
+}
