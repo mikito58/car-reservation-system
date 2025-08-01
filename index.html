@@ -28,12 +28,24 @@
             <!-- カレンダー表示 -->
             <section class="calendar-section">
                 <h2>予約カレンダー</h2>
-                <div class="date-navigation">
-                    <button id="prevWeek" class="btn btn-nav">◀ 前週</button>
-                    <span id="currentWeek" class="current-week"></span>
-                    <button id="nextWeek" class="btn btn-nav">次週 ▶</button>
+                <div class="calendar-navigation">
+                    <button id="prevMonth" class="btn btn-nav">◀ 前月</button>
+                    <span id="currentMonth" class="current-month"></span>
+                    <button id="nextMonth" class="btn btn-nav">次月 ▶</button>
                 </div>
-                <div id="calendar" class="calendar"></div>
+                <div class="calendar-legend">
+                    <span class="legend-item"><span class="status-available">○</span> 空き</span>
+                    <span class="legend-item"><span class="status-partial">△</span> 一部予約</span>
+                    <span class="legend-item"><span class="status-full">×</span> 満員</span>
+                </div>
+                <div id="monthCalendar" class="month-calendar"></div>
+            </section>
+
+            <!-- 日別詳細表示 -->
+            <section class="daily-schedule" id="dailySchedule" style="display: none;">
+                <h2>日別予約状況</h2>
+                <div class="selected-date" id="selectedDate"></div>
+                <div id="dailyTimeSlots" class="daily-time-slots"></div>
             </section>
 
             <!-- 予約フォーム -->
