@@ -119,67 +119,161 @@ h2 {
 }
 
 /* カレンダー */
-.date-navigation {
+.calendar-navigation {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
 }
 
-.current-week {
-    font-size: 1.2em;
+.current-month {
+    font-size: 1.4em;
     font-weight: bold;
+    color: #2d3748;
+}
+
+.calendar-legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #f7fafc;
+    border-radius: 5px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
     color: #4a5568;
 }
 
-.calendar {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.calendar-header, .calendar-cell {
-    padding: 10px;
-    text-align: center;
-    border: 1px solid #e2e8f0;
-    background: #f7fafc;
-}
-
-.calendar-header {
-    background: #4a5568;
-    color: white;
+.status-available, .status-partial, .status-full {
+    font-size: 20px;
     font-weight: bold;
 }
 
-.calendar-cell {
+.status-available {
+    color: #48bb78;
+}
+
+.status-partial {
+    color: #ed8936;
+}
+
+.status-full {
+    color: #f56565;
+}
+
+/* 月間カレンダー */
+.month-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-weekday {
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    background: #4a5568;
+    color: white;
+}
+
+.calendar-day {
     min-height: 80px;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
 }
 
-.calendar-cell:hover {
+.calendar-day:hover {
     background: #edf2f7;
     transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.calendar-cell.has-reservation {
-    background: #fef3c7;
+.calendar-day.other-month {
+    opacity: 0.4;
+    background: #f7fafc;
 }
 
-.reservation-block {
-    background: #667eea;
-    color: white;
-    padding: 2px 5px;
-    margin: 2px 0;
-    border-radius: 3px;
-    font-size: 12px;
-    cursor: pointer;
+.calendar-day.selected {
+    background: #e6f2ff;
+    border-color: #667eea;
 }
 
-.reservation-block:hover {
-    background: #5a67d8;
+.day-number {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.day-status {
+    font-size: 24px;
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* 日別詳細表示 */
+.daily-schedule {
+    margin-top: 20px;
+}
+
+.selected-date {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+}
+
+.daily-time-slots {
+    display: grid;
+    gap: 10px;
+}
+
+.time-slot {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 20px;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    background: #f7fafc;
+}
+
+.time-slot.available {
+    background: #f0fff4;
+    border-color: #48bb78;
+}
+
+.time-slot.reserved {
+    background: #fff5f5;
+    border-color: #f56565;
+}
+
+.time-label {
+    font-weight: bold;
+    color: #4a5568;
+}
+
+.slot-status {
+    color: #48bb78;
+}
+
+.slot-status.reserved {
+    color: #f56565;
+}
+
+.reservation-info {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
 }
 
 /* フォーム */
@@ -303,8 +397,17 @@ select:focus {
         padding: 10px;
     }
     
-    .calendar {
-        grid-template-columns: repeat(1, 1fr);
+    .month-calendar {
+        gap: 2px;
+    }
+    
+    .calendar-day {
+        min-height: 60px;
+        padding: 5px;
+    }
+    
+    .day-status {
+        font-size: 18px;
     }
     
     .form-row {
@@ -317,5 +420,9 @@ select:focus {
     
     #vehicleSelect {
         width: 100%;
+    }
+    
+    .calendar-legend {
+        font-size: 12px;
     }
 }
